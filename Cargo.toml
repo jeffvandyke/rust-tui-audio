@@ -5,3 +5,4 @@ authors = ["Jeff VanDyke <jeff.vandyke@vibrationresearch.com>"]
 edition = "2018"
 
 [dependencies]
+cpal = "0.8"
