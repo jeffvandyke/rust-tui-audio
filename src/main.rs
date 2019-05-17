@@ -1,7 +1,7 @@
 #![deny(clippy::all)]
-#![deny(clippy::pedantic)]
 
 mod app;
+mod data_buffer;
 
 use app::*;
 
