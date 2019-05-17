@@ -1,8 +1,8 @@
+use super::data_buffer::DataBuffer;
 use cpal::{EventLoop, StreamData, UnknownTypeInputBuffer};
 use std::fmt;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use super::data_buffer::DataBuffer;
 
 pub struct App {
     event_loop: Arc<EventLoop>,
@@ -72,21 +72,29 @@ impl App {
         std::thread::spawn(move || {
             // const ENVELOPE_SIZE: usize = 32;
             // let leftover...
+            let mut quick_tmp_buffer = vec![0.0; 1000];
+            event_loop.run(|_stream_id, stream_data| match stream_data {
+                StreamData::Input {
+                    buffer: UnknownTypeInputBuffer::F32(buffer),
+                } => {
+                    let buffer_len = buffer.len();
+                    if buffer_len > quick_tmp_buffer.len() {
+                        quick_tmp_buffer.resize(buffer_len, 0.);
+                    }
+                    // Now quick_tmp_buffer is large enough to hold elements, use it as a tmp
+                    // storage to get data out of the buffer as quickly as possible!!!
+                    // (still crashes sometimes, TODO: fix)
 
-            event_loop
-                .clone()
-                .run(|_stream_id, stream_data| match stream_data {
-                    StreamData::Input {
-                        buffer: UnknownTypeInputBuffer::F32(buffer),
-                    } => {
-                        let mut unlocked_buffer = shared_buffer.lock().unwrap();
-                        unlocked_buffer.push_latest_data(&buffer);
-                    }
-                    StreamData::Input { .. } => {
-                        panic!("Want F32 buffer!!! (suggestion: Jeff, be less picky!");
-                    }
-                    _ => (),
-                });
+                    quick_tmp_buffer[..buffer_len].copy_from_slice(&buffer);
+
+                    let mut unlocked_buffer = shared_buffer.lock().unwrap();
+                    unlocked_buffer.push_latest_data(&quick_tmp_buffer[..buffer_len]);
+                }
+                StreamData::Input { .. } => {
+                    panic!("Want F32 buffer!!! (suggestion: Jeff, be less picky!");
+                }
+                _ => (),
+            });
         });
 
         let mut x = 0;
