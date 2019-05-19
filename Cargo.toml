@@ -6,3 +6,5 @@ edition = "2018"
 
 [dependencies]
 cpal = "0.8"
+tui = "0.5"
+termion = "1.5"

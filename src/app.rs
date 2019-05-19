@@ -1,10 +1,12 @@
-use super::data_buffer::DataBuffer;
+use crate::data_buffer::DataBuffer;
+use crate::ui;
 use cpal::{EventLoop, StreamData, UnknownTypeInputBuffer};
 use std::fmt;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 pub struct App {
+    ui: ui::Ui,
     event_loop: Arc<EventLoop>,
     shared_buffer: Arc<Mutex<DataBuffer>>,
     // stream_id: cpal::StreamId,
@@ -14,9 +16,10 @@ pub struct App {
 
 #[derive(Debug)]
 pub enum InitError {
-    NoDefaultInputDevice,
-    DefaultFormatError(cpal::DefaultFormatError),
-    CreationError(cpal::CreationError),
+    NoDefaultAudioInput,
+    DefaulAudioFormatError(cpal::DefaultFormatError),
+    StreamCreationError(cpal::CreationError),
+    InitUiError(std::io::Error),
 }
 
 impl fmt::Display for InitError {
@@ -25,11 +28,15 @@ impl fmt::Display for InitError {
             f,
             "{}",
             match self {
-                InitError::NoDefaultInputDevice => "Couldn't initialize default input device",
-                InitError::DefaultFormatError(_) => {
-                    "Error obtaining default format for a valid input device"
+                InitError::NoDefaultAudioInput => {
+                    "Couldn't initialize default input device".to_string()
                 }
-                InitError::CreationError(_) => "Error creating stream",
+                InitError::DefaulAudioFormatError(err) => format!(
+                    "Error obtaining default format for a valid input device: {}",
+                    err
+                ),
+                InitError::StreamCreationError(err) => format!("Error creating stream: {}", err),
+                InitError::InitUiError(io_err) => format!("Error creating stream: {}", io_err),
             }
         )
     }
@@ -37,13 +44,19 @@ impl fmt::Display for InitError {
 
 impl From<cpal::DefaultFormatError> for InitError {
     fn from(err: cpal::DefaultFormatError) -> Self {
-        InitError::DefaultFormatError(err)
+        InitError::DefaulAudioFormatError(err)
     }
 }
 
 impl From<cpal::CreationError> for InitError {
     fn from(err: cpal::CreationError) -> Self {
-        InitError::CreationError(err)
+        InitError::StreamCreationError(err)
+    }
+}
+
+impl From<std::io::Error> for InitError {
+    fn from(err: std::io::Error) -> Self {
+        InitError::InitUiError(err)
     }
 }
 
@@ -54,11 +67,12 @@ impl App {
     pub fn init() -> Result<Self, InitError> {
         // setup incoming stream as per cpal module docs (except with build_input_stream)
         let event_loop = EventLoop::new();
-        let input_device = cpal::default_input_device().ok_or(InitError::NoDefaultInputDevice)?;
+        let input_device = cpal::default_input_device().ok_or(InitError::NoDefaultAudioInput)?;
         let default_format = input_device.default_input_format()?;
         let _stream_id = event_loop.build_input_stream(&input_device, &default_format)?;
 
         Ok(Self {
+            ui: ui::Ui::init()?,
             event_loop: Arc::new(event_loop),
             shared_buffer: Arc::new(Mutex::new(DataBuffer::new(500))),
             // stream_id,
@@ -101,15 +115,12 @@ impl App {
         loop {
             std::thread::sleep(Duration::from_millis(10));
             let buffer = self.shared_buffer.lock().unwrap();
-            let len = buffer.len();
-            let avg = buffer.iter().map(|v| v.abs() / len as f32).sum::<f32>();
+            self.ui.draw(&buffer);
 
-            println!("{}", avg);
-            for _ in 0..(x % 32) {
-                print!(" ");
-            }
-            println!("O");
             x += 1;
+            if x > 100 {
+                return Ok(());
+            }
         }
     }
 }

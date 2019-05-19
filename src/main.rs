@@ -2,6 +2,7 @@
 
 mod app;
 mod data_buffer;
+mod ui;
 
 use app::*;
 
