@@ -70,7 +70,7 @@ impl Ui {
         let len = buffer.len();
         let avg = buffer
             .iter()
-            .map(|v| f32::from(v.abs()) / len as f32)
+            .map(|v| f32::from(*v).abs() / len as f32)
             .sum::<f32>();
 
         let text = [
