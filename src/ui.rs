@@ -5,12 +5,15 @@ use std::sync::mpsc;
 use tui::backend::CrosstermBackend;
 use tui::Terminal;
 
+pub use crossterm::KeyEvent;
+
 pub enum Event {
-    Input(char),
+    KeyInput(KeyEvent),
 }
 
 pub struct Ui {
     terminal: Terminal<CrosstermBackend>,
+    _into_raw_drop_reset: crossterm::RawScreen,
     pub key_event_rx: mpsc::Receiver<Event>,
 }
 
@@ -20,21 +23,31 @@ impl Ui {
         let mut terminal = Terminal::new(backend)?;
         terminal.hide_cursor()?;
 
+        let into_raw_drop_reset =
+            crossterm::RawScreen::into_raw_mode().expect("Couldn't put in raw mode");
+
         let (tx, rx) = mpsc::channel();
 
         {
             let tx = tx.clone();
             std::thread::spawn(move || {
                 let input = crossterm::input();
+                let mut stdin = input.read_sync();
                 loop {
-                    if let Ok(key) = input.read_char() {
-                        if tx.send(Event::Input(key)).is_err() {
+                    use crossterm::InputEvent;
+                    match stdin.next() {
+                        Some(InputEvent::Keyboard(key_event)) => {
+                            if let KeyEvent::Ctrl('c') = key_event {
+                                return;
+                            }
+                            if tx.send(Event::KeyInput(key_event)).is_err() {
+                                return;
+                            }
+                        }
+                        None => {
                             return;
                         }
-                        if key == '' {
-                            // Ctrl-c
-                            return;
-                        }
+                        _ => {}
                     }
                     // TODO: is this a performance drain?
                 }
@@ -43,6 +56,7 @@ impl Ui {
 
         Ok(Self {
             terminal,
+            _into_raw_drop_reset: into_raw_drop_reset,
             key_event_rx: rx,
         })
     }

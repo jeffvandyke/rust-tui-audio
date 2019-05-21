@@ -78,8 +78,9 @@ impl App {
         })
     }
 
-    pub fn on_key(&mut self, key: char) {
-        if key == 'r' {
+    pub fn on_key(&mut self, key: ui::KeyEvent) {
+        use ui::KeyEvent;
+        if let KeyEvent::Char('r') = dbg!(key) {
             // Reset 'x'
             self.x = 0;
         }
@@ -124,7 +125,7 @@ impl App {
                 match ui.key_event_rx.try_recv() {
                     Ok(event) => match event {
                         // Only 1 kind of event for now...
-                        ui::Event::Input(key) => self.on_key(key),
+                        ui::Event::KeyInput(key) => self.on_key(key),
                     },
                     // Done looping
                     Err(TryRecvError::Empty) => break,
