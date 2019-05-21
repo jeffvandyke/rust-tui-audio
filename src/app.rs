@@ -6,9 +6,9 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 pub struct App {
-    ui: ui::Ui,
     event_loop: Arc<EventLoop>,
-    shared_buffer: Arc<Mutex<DataBuffer>>,
+    pub shared_buffer: Arc<Mutex<DataBuffer>>,
+    pub x: i64,
     // stream_id: cpal::StreamId,
 }
 
@@ -72,14 +72,20 @@ impl App {
         let _stream_id = event_loop.build_input_stream(&input_device, &default_format)?;
 
         Ok(Self {
-            ui: ui::Ui::init()?,
             event_loop: Arc::new(event_loop),
             shared_buffer: Arc::new(Mutex::new(DataBuffer::new(500))),
-            // stream_id,
+            x: 0,
         })
     }
 
-    pub fn run(&mut self) -> Result<(), ()> {
+    pub fn on_key(&mut self, key: char) {
+        if key == 'r' {
+            // Reset 'x'
+            self.x = 0;
+        }
+    }
+
+    pub fn run(&mut self, ui: &mut ui::Ui) -> Result<(), ()> {
         // Start thread for reading audio data
         let shared_buffer = self.shared_buffer.clone();
         let event_loop = self.event_loop.clone();
@@ -111,16 +117,32 @@ impl App {
             });
         });
 
-        let mut x = 0;
         loop {
-            std::thread::sleep(Duration::from_millis(10));
-            let buffer = self.shared_buffer.lock().unwrap();
-            self.ui.draw(&buffer);
+            // Process all available inputs key_event_rx
+            loop {
+                use std::sync::mpsc::TryRecvError; // shortcut
+                match ui.key_event_rx.try_recv() {
+                    Ok(event) => match event {
+                        // Only 1 kind of event for now...
+                        ui::Event::Input(key) => self.on_key(key),
+                    },
+                    // Done looping
+                    Err(TryRecvError::Empty) => break,
+                    // Done RUNNING, exit...
+                    Err(TryRecvError::Disconnected) => return Ok(()),
+                }
+            }
 
-            x += 1;
-            if x > 100 {
+            self.x += 1;
+            if self.x > 1000 {
                 return Ok(());
             }
+
+            ui.draw(&self)
+                .expect("Failure calling ui.draw, aborting...");
+
+            // Wait until next loop (~16.66 ms)
+            std::thread::sleep(Duration::from_millis(1000 / 60));
         }
     }
 }

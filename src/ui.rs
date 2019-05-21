@@ -1,22 +1,17 @@
-use crate::data_buffer::DataBuffer;
-use std::io;
+use crate::app::App;
 use crossterm;
+use std::io;
+use std::sync::mpsc;
 use tui::backend::CrosstermBackend;
 use tui::Terminal;
 
-struct UiContext {
-    x: i32,
-}
-
-impl UiContext {
-    fn new() -> Self {
-        Self { x: 0, }
-    }
+pub enum Event {
+    Input(char),
 }
 
 pub struct Ui {
     terminal: Terminal<CrosstermBackend>,
-    context: UiContext,
+    pub key_event_rx: mpsc::Receiver<Event>,
 }
 
 impl Ui {
@@ -24,19 +19,52 @@ impl Ui {
         let backend = CrosstermBackend::new();
         let mut terminal = Terminal::new(backend)?;
         terminal.hide_cursor()?;
+
+        let (tx, rx) = mpsc::channel();
+
+        {
+            let tx = tx.clone();
+            std::thread::spawn(move || {
+                let input = crossterm::input();
+                loop {
+                    if let Ok(key) = input.read_char() {
+                        if tx.send(Event::Input(key)).is_err() {
+                            return;
+                        }
+                        if key == '' {
+                            // Ctrl-c
+                            return;
+                        }
+                    }
+                    // TODO: is this a performance drain?
+                }
+            });
+        }
+
         Ok(Self {
-            context: UiContext::new(),
             terminal,
+            key_event_rx: rx,
         })
     }
 
-    /// Draw 1 rendering
-    pub fn draw(&mut self, audio_buffer: &DataBuffer) {
-        let len = audio_buffer.len();
-        let avg = audio_buffer.iter().map(|v| v.abs() / len as f32).sum::<f32>();
-        let ctx = &mut self.context;
-        let x = &mut ctx.x;
+    /// Draw screen for the current app state
+    pub fn draw(&mut self, app: &App) -> io::Result<()> {
+        use tui::widgets::{self, Text, Widget};
+        let size = self.terminal.size()?;
 
-        *x += 1;
+        let buffer = app.shared_buffer.lock().unwrap();
+        let len = buffer.len();
+        let avg = buffer.iter().map(|v| v.abs() / len as f32).sum::<f32>();
+
+        let text = [
+            Text::raw(format!("X is: {}", app.x)),
+            Text::raw(format!("Average is: {}", avg)),
+        ];
+
+        self.terminal.draw(|mut frame| {
+            widgets::Paragraph::new(text.iter()).render(&mut frame, size);
+        })?;
+
+        Ok(())
     }
 }
