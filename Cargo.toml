@@ -5,6 +5,7 @@ authors = ["Jeff VanDyke <jeff.vandyke@vibrationresearch.com>"]
 edition = "2018"
 
 [dependencies]
-cpal = "0.8"
+wavy = "0.1"
+# cpal = "0.8"
 tui = { version = "0.5", features = ["crossterm"] }
 crossterm = "0.9"

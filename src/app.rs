@@ -1,24 +1,21 @@
 use crate::data_buffer::DataBuffer;
 use crate::ui;
-use cpal::{EventLoop, StreamData, UnknownTypeInputBuffer};
+// use cpal::{EventLoop, StreamData, UnknownTypeInputBuffer};
 use std::fmt;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use wavy;
 
 pub struct App {
-    event_loop: Arc<EventLoop>,
     pub shared_buffer: Arc<Mutex<DataBuffer>>,
     pub x: i64,
-    // stream_id: cpal::StreamId,
 }
 
 // begin error boilerplate (might replace with a crate-provided automation
 
 #[derive(Debug)]
 pub enum InitError {
-    NoDefaultAudioInput,
-    DefaulAudioFormatError(cpal::DefaultFormatError),
-    StreamCreationError(cpal::CreationError),
+    AudioError(wavy::AudioError),
     InitUiError(std::io::Error),
 }
 
@@ -28,29 +25,16 @@ impl fmt::Display for InitError {
             f,
             "{}",
             match self {
-                InitError::NoDefaultAudioInput => {
-                    "Couldn't initialize default input device".to_string()
-                }
-                InitError::DefaulAudioFormatError(err) => format!(
-                    "Error obtaining default format for a valid input device: {}",
-                    err
-                ),
-                InitError::StreamCreationError(err) => format!("Error creating stream: {}", err),
+                InitError::AudioError(err) => format!("Error with audio: {:?}", err),
                 InitError::InitUiError(io_err) => format!("Error creating stream: {}", io_err),
             }
         )
     }
 }
 
-impl From<cpal::DefaultFormatError> for InitError {
-    fn from(err: cpal::DefaultFormatError) -> Self {
-        InitError::DefaulAudioFormatError(err)
-    }
-}
-
-impl From<cpal::CreationError> for InitError {
-    fn from(err: cpal::CreationError) -> Self {
-        InitError::StreamCreationError(err)
+impl From<wavy::AudioError> for InitError {
+    fn from(err: wavy::AudioError) -> Self {
+        InitError::AudioError(err)
     }
 }
 
@@ -66,13 +50,7 @@ impl App {
     /// Initializes (configures) soundcard devices, prime for running.
     pub fn init() -> Result<Self, InitError> {
         // setup incoming stream as per cpal module docs (except with build_input_stream)
-        let event_loop = EventLoop::new();
-        let input_device = cpal::default_input_device().ok_or(InitError::NoDefaultAudioInput)?;
-        let default_format = input_device.default_input_format()?;
-        let _stream_id = event_loop.build_input_stream(&input_device, &default_format)?;
-
         Ok(Self {
-            event_loop: Arc::new(event_loop),
             shared_buffer: Arc::new(Mutex::new(DataBuffer::new(500))),
             x: 0,
         })
@@ -89,33 +67,22 @@ impl App {
     pub fn run(&mut self, ui: &mut ui::Ui) -> Result<(), ()> {
         // Start thread for reading audio data
         let shared_buffer = self.shared_buffer.clone();
-        let event_loop = self.event_loop.clone();
-        std::thread::spawn(move || {
-            // const ENVELOPE_SIZE: usize = 32;
-            // let leftover...
-            let mut quick_tmp_buffer = vec![0.0; 1000];
-            event_loop.run(|_stream_id, stream_data| match stream_data {
-                StreamData::Input {
-                    buffer: UnknownTypeInputBuffer::F32(buffer),
-                } => {
-                    let buffer_len = buffer.len();
-                    if buffer_len > quick_tmp_buffer.len() {
-                        quick_tmp_buffer.resize(buffer_len, 0.);
-                    }
-                    // Now quick_tmp_buffer is large enough to hold elements, use it as a tmp
-                    // storage to get data out of the buffer as quickly as possible!!!
-                    // (still crashes sometimes, TODO: fix)
+        let _h = std::thread::spawn(move || {
+            let mut mic = wavy::MicrophoneSystem::new(wavy::SampleRate::Normal)
+                .expect("Failed initing mic system");
+            const BUF_MAX: usize = 44100 / 500;
+            let mut buffer = Vec::with_capacity(BUF_MAX * 2);
+            loop {
+                mic.record(&mut |_whichmic, l, _r| {
+                    buffer.push(l);
+                });
 
-                    quick_tmp_buffer[..buffer_len].copy_from_slice(&buffer);
-
+                if buffer.len() >= BUF_MAX {
                     let mut unlocked_buffer = shared_buffer.lock().unwrap();
-                    unlocked_buffer.push_latest_data(&quick_tmp_buffer[..buffer_len]);
+                    unlocked_buffer.push_latest_data(&buffer);
+                    buffer.clear();
                 }
-                StreamData::Input { .. } => {
-                    panic!("Want F32 buffer!!! (suggestion: Jeff, be less picky!");
-                }
-                _ => (),
-            });
+            }
         });
 
         loop {

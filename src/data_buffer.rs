@@ -1,16 +1,18 @@
 use std::collections::VecDeque;
 
+type Sample = i16;
+
 /// A buffer to hold audio data meant for display on the terminal.
 #[derive(Debug, PartialEq)]
 pub struct DataBuffer {
-    buffer: VecDeque<f32>,
+    buffer: VecDeque<Sample>,
 }
 
 impl DataBuffer {
     /// Makes a zero-filled circular data buffer of the given size.
     pub fn new(len: usize) -> DataBuffer {
         DataBuffer {
-            buffer: VecDeque::from(vec![0.; len]),
+            buffer: VecDeque::from(vec![0; len]),
         }
     }
 
@@ -19,7 +21,7 @@ impl DataBuffer {
     /// The latest data from `buf_data` is pushed to the end of the DataBuffer. If buf_data is
     /// larger than the DataBuffer, only available samples will be used. if buf_data is smaller,
     /// the remaining space is filled with the previous most recent.
-    pub fn push_latest_data(&mut self, buf_data: &[f32]) {
+    pub fn push_latest_data(&mut self, buf_data: &[Sample]) {
         if buf_data.len() < self.buffer.len() {
             let diff = self.buffer.len() - buf_data.len();
 
@@ -52,7 +54,7 @@ impl DataBuffer {
     }
 
     /// Returns an iter from the underlying VecDeque
-    pub fn iter(&self) -> std::collections::vec_deque::Iter<f32> {
+    pub fn iter(&self) -> std::collections::vec_deque::Iter<Sample> {
         self.buffer.iter()
     }
 }
@@ -64,31 +66,31 @@ mod tests {
     /// Additional test function
     impl DataBuffer {
         /// Creates a new Vec by copying all the elements in the current vector
-        pub fn clone_vec(&self) -> Vec<f32> {
+        pub fn clone_vec(&self) -> Vec<Sample> {
             self.buffer.iter().cloned().collect()
         }
     }
 
     #[test]
     fn it_initializes_with_zeros() {
-        assert_eq!(&DataBuffer::new(4).clone_vec(), &[0., 0., 0., 0.]);
+        assert_eq!(&DataBuffer::new(4).clone_vec(), &[0, 0, 0, 0]);
     }
 
     #[test]
     fn it_pushes_short_data() {
         let mut data = DataBuffer::new(6);
-        data.push_latest_data(&[2., 3., 4.]);
-        assert_eq!(&data.clone_vec(), &[0., 0., 0., 2., 3., 4.]);
-        data.push_latest_data(&[5., 6.]);
-        assert_eq!(&data.clone_vec(), &[0., 2., 3., 4., 5., 6.]);
+        data.push_latest_data(&[2, 3, 4]);
+        assert_eq!(&data.clone_vec(), &[0, 0, 0, 2, 3, 4]);
+        data.push_latest_data(&[5, 6]);
+        assert_eq!(&data.clone_vec(), &[0, 2, 3, 4, 5, 6]);
     }
 
     #[test]
     fn it_pushes_long_data() {
         let mut data = DataBuffer::new(4);
-        data.push_latest_data(&[2., 3., 4.]);
-        assert_eq!(&data.clone_vec(), &[0., 2., 3., 4.]);
-        data.push_latest_data(&[11., 12., 13., 14., 15., 16., 17.]);
-        assert_eq!(&data.clone_vec(), &[14., 15., 16., 17.]);
+        data.push_latest_data(&[2, 3, 4]);
+        assert_eq!(&data.clone_vec(), &[0, 2, 3, 4]);
+        data.push_latest_data(&[11, 12, 13, 14, 15, 16, 17]);
+        assert_eq!(&data.clone_vec(), &[14, 15, 16, 17]);
     }
 }

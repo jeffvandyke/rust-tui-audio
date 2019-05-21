@@ -68,7 +68,7 @@ impl Ui {
 
         let buffer = app.shared_buffer.lock().unwrap();
         let len = buffer.len();
-        let avg = buffer.iter().map(|v| v.abs() / len as f32).sum::<f32>();
+        let avg = buffer.iter().map(|v| f32::from(v.abs()) / len as f32).sum::<f32>();
 
         let text = [
             Text::raw(format!("X is: {}", app.x)),
