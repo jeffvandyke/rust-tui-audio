@@ -1,7 +1,7 @@
 use crate::data_buffer::DataBuffer;
 use std::io;
-use termion::raw::{IntoRawMode, RawTerminal};
-use tui::backend::TermionBackend;
+use crossterm;
+use tui::backend::CrosstermBackend;
 use tui::Terminal;
 
 struct UiContext {
@@ -15,15 +15,15 @@ impl UiContext {
 }
 
 pub struct Ui {
-    terminal: Terminal<TermionBackend<RawTerminal<io::Stdout>>>,
+    terminal: Terminal<CrosstermBackend>,
     context: UiContext,
 }
 
 impl Ui {
     pub fn init() -> Result<Self, io::Error> {
-        let stdout = io::stdout().into_raw_mode()?;
-        let backend = TermionBackend::new(stdout);
-        let terminal = Terminal::new(backend)?;
+        let backend = CrosstermBackend::new();
+        let mut terminal = Terminal::new(backend)?;
+        terminal.hide_cursor()?;
         Ok(Self {
             context: UiContext::new(),
             terminal,
