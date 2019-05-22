@@ -69,7 +69,6 @@ impl Ui {
     pub fn draw(&mut self, app: &App) -> io::Result<()> {
         use tui::layout;
         use tui::widgets::{self, Block, Borders, Text, Widget};
-        let size = self.terminal.size()?;
 
         let buffer = app.shared_buffer.lock().unwrap();
         let len = buffer.len();
@@ -95,8 +94,7 @@ impl Ui {
                 .title("TODO: Waveform");
             waveform_block.render(&mut frame, chunks[0]);
 
-            WaveWidget::new()
-                .render(&mut frame, waveform_block.inner(chunks[0]));
+            WaveWidget::new(&buffer).render(&mut frame, waveform_block.inner(chunks[0]));
 
             widgets::Paragraph::new(text.iter())
                 .block(Block::default().borders(Borders::ALL).title("Status"))
