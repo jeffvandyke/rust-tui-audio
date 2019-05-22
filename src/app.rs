@@ -102,9 +102,6 @@ impl App {
             }
 
             self.x += 1;
-            if self.x > 1000 {
-                return Ok(());
-            }
 
             ui.draw(&self)
                 .expect("Failure calling ui.draw, aborting...");
