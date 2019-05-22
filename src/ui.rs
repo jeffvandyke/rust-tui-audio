@@ -91,7 +91,7 @@ impl Ui {
 
             let mut waveform_block = Block::default()
                 .borders(Borders::ALL)
-                .title("TODO: Waveform");
+                .title("Waveform Oscilloscope");
             waveform_block.render(&mut frame, chunks[0]);
 
             WaveWidget::new(&buffer).render(&mut frame, waveform_block.inner(chunks[0]));

@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-type Sample = i16;
+pub type Sample = i16;
 
 /// A buffer to hold audio data meant for display on the terminal.
 #[derive(Debug, PartialEq)]
