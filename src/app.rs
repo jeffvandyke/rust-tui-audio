@@ -6,6 +6,8 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use wavy;
 
+const MAX_BUFFER_SAMPLES: usize = 1000;
+
 pub struct App {
     pub shared_buffer: Arc<Mutex<DataBuffer>>,
     pub x: i64,
@@ -51,7 +53,7 @@ impl App {
     pub fn init() -> Result<Self, InitError> {
         // setup incoming stream as per cpal module docs (except with build_input_stream)
         Ok(Self {
-            shared_buffer: Arc::new(Mutex::new(DataBuffer::new(500))),
+            shared_buffer: Arc::new(Mutex::new(DataBuffer::new(MAX_BUFFER_SAMPLES))),
             x: 0,
         })
     }
