@@ -21,6 +21,7 @@ impl Ui {
     pub fn init() -> Result<Self, io::Error> {
         let backend = CrosstermBackend::new();
         let mut terminal = Terminal::new(backend)?;
+        terminal.clear()?;
         terminal.hide_cursor()?;
 
         let into_raw_drop_reset =
