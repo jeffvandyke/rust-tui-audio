@@ -39,7 +39,7 @@ impl<'a> Widget for WaveWidget<'a> {
             let norm_y = f32::from(sample) / SAMPLE_RANGE;
 
             // Scale (might clip) sample to see more
-            let norm_y = norm_y * 7.;
+            let norm_y = norm_y * 500.;
 
             let row = ((norm_y + 0.5) * f32::from(height)).floor() as u16;
 

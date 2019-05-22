@@ -69,10 +69,11 @@ impl App {
     pub fn run(&mut self, ui: &mut ui::Ui) -> Result<(), ()> {
         // Start thread for reading audio data
         let shared_buffer = self.shared_buffer.clone();
-        let _h = std::thread::spawn(move || {
+
+        let _audio_thread_handle = std::thread::spawn(move || {
             let mut mic = wavy::MicrophoneSystem::new(wavy::SampleRate::Normal)
                 .expect("Failed initing mic system");
-            const BUF_MAX: usize = 44100 / 500;
+            const BUF_MAX: usize = 100;
             let mut buffer = Vec::with_capacity(BUF_MAX * 2);
             loop {
                 mic.record(&mut |_whichmic, l, _r| {
