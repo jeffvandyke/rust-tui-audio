@@ -7,6 +7,9 @@ use tui::Terminal;
 
 pub use crossterm::KeyEvent;
 
+mod wave_widget;
+use wave_widget::WaveWidget;
+
 pub enum Event {
     KeyInput(KeyEvent),
 }
@@ -92,9 +95,8 @@ impl Ui {
                 .title("TODO: Waveform");
             waveform_block.render(&mut frame, chunks[0]);
 
-            widgets::Paragraph::new(text.iter())
+            WaveWidget::new()
                 .render(&mut frame, waveform_block.inner(chunks[0]));
-
 
             widgets::Paragraph::new(text.iter())
                 .block(Block::default().borders(Borders::ALL).title("Status"))
