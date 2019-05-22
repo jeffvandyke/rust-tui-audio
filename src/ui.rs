@@ -63,7 +63,8 @@ impl Ui {
 
     /// Draw screen for the current app state
     pub fn draw(&mut self, app: &App) -> io::Result<()> {
-        use tui::widgets::{self, Text, Widget};
+        use tui::layout;
+        use tui::widgets::{self, Block, Borders, Text, Widget};
         let size = self.terminal.size()?;
 
         let buffer = app.shared_buffer.lock().unwrap();
@@ -75,11 +76,28 @@ impl Ui {
 
         let text = [
             Text::raw(format!("X is: {}", app.x)),
+            Text::raw(" - "),
             Text::raw(format!("Average is: {}", avg)),
         ];
 
         self.terminal.draw(|mut frame| {
-            widgets::Paragraph::new(text.iter()).render(&mut frame, size);
+            let chunks = layout::Layout::default()
+                .direction(layout::Direction::Vertical)
+                .constraints([layout::Constraint::Min(3), layout::Constraint::Length(3)].as_ref())
+                .split(frame.size());
+
+            let mut waveform_block = Block::default()
+                .borders(Borders::ALL)
+                .title("TODO: Waveform");
+            waveform_block.render(&mut frame, chunks[0]);
+
+            widgets::Paragraph::new(text.iter())
+                .render(&mut frame, waveform_block.inner(chunks[0]));
+
+
+            widgets::Paragraph::new(text.iter())
+                .block(Block::default().borders(Borders::ALL).title("Status"))
+                .render(&mut frame, chunks[1]);
         })?;
 
         Ok(())
