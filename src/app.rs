@@ -58,7 +58,7 @@ impl App {
 
     pub fn on_key(&mut self, key: ui::KeyEvent) {
         use ui::KeyEvent;
-        if let KeyEvent::Char('r') = dbg!(key) {
+        if let KeyEvent::Char('r') = key {
             // Reset 'x'
             self.x = 0;
         }
