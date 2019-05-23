@@ -46,6 +46,16 @@ impl From<std::io::Error> for InitError {
 
 // }}} end error boilerplate
 
+pub enum AppEndReason {
+    KeyQueueDisconnected,
+}
+
+impl std::fmt::Display for AppEndReason {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Input key queue was disconnected")
+    }
+}
+
 impl App {
     /// Initializes (configures) soundcard devices, prime for running.
     pub fn init() -> Result<Self, InitError> {
@@ -64,7 +74,7 @@ impl App {
         }
     }
 
-    pub fn run(&mut self, ui: &mut ui::Ui) -> Result<(), ()> {
+    pub fn run(&mut self, ui: &mut ui::Ui) -> Result<AppEndReason, ()> {
         // Start thread for reading audio data
         let shared_buffer = self.shared_buffer.clone();
 
@@ -151,7 +161,7 @@ impl App {
                     // Done looping
                     Err(TryRecvError::Empty) => break,
                     // Done RUNNING, exit...
-                    Err(TryRecvError::Disconnected) => return Ok(()),
+                    Err(TryRecvError::Disconnected) => return Ok(AppEndReason::KeyQueueDisconnected),
                 }
             }
 
