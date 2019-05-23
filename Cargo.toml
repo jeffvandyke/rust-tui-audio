@@ -7,5 +7,5 @@ edition = "2018"
 [dependencies]
 wavy = "0.1"
 # cpal = "0.8"
-tui = { version = "0.5", features = ["crossterm"] }
+tui = { version = "0.5", default-features = false, features = ["crossterm"] }
 crossterm = "0.9"
