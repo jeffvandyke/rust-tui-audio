@@ -14,8 +14,6 @@ impl<'a> WaveWidget<'a> {
     }
 }
 
-const SAMPLE_RANGE: f32 = std::i16::MAX as f32 - std::i16::MIN as f32 + 1.;
-
 impl<'a> Widget for WaveWidget<'a> {
     /// Draws the WaveWidget's waveform onto the terminal buffer
     fn draw(&mut self, area: Rect, buf: &mut Buffer) {
@@ -23,7 +21,7 @@ impl<'a> Widget for WaveWidget<'a> {
         let waveform_len = self.waveform.len();
         assert!(waveform_len > width.into());
 
-        for col in 0..width {
+        for col in 1..=width {
             buf.get_mut(col, height / 2)
                 .set_char('=')
                 .set_fg(Color::Green);
@@ -35,11 +33,9 @@ impl<'a> Widget for WaveWidget<'a> {
             .skip(waveform_len - usize::from(width))
             .enumerate()
         {
-            let col = index as u16;
-            let norm_y = f32::from(sample) / SAMPLE_RANGE;
-
+            let col = index as u16 + 1;
             // Scale (might clip) sample to see more
-            let norm_y = norm_y * 500.;
+            let norm_y = sample * 5.;
 
             let row = ((norm_y + 0.5) * f32::from(height)).floor() as u16;
 

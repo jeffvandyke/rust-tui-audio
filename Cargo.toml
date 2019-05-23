@@ -5,7 +5,10 @@ authors = ["Jeff VanDyke <jeff.vandyke@vibrationresearch.com>"]
 edition = "2018"
 
 [dependencies]
-wavy = "0.1"
-# cpal = "0.8"
 tui = { version = "0.5", default-features = false, features = ["crossterm"] }
 crossterm = "0.9"
+cpal = "0.8"
+
+# Linux-specific dependencies
+[target.'cfg(target_os = "linux")'.dependencies]
+wavy = "0.1"

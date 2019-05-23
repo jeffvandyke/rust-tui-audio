@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-pub type Sample = i16;
+pub type Sample = f32;
 
 /// A buffer to hold audio data meant for display on the terminal.
 #[derive(Debug, PartialEq)]
@@ -12,7 +12,7 @@ impl DataBuffer {
     /// Makes a zero-filled circular data buffer of the given size.
     pub fn new(len: usize) -> DataBuffer {
         DataBuffer {
-            buffer: VecDeque::from(vec![0; len]),
+            buffer: VecDeque::from(vec![0.; len]),
         }
     }
 
@@ -73,24 +73,24 @@ mod tests {
 
     #[test]
     fn it_initializes_with_zeros() {
-        assert_eq!(&DataBuffer::new(4).clone_vec(), &[0, 0, 0, 0]);
+        assert_eq!(&DataBuffer::new(4).clone_vec(), &[0., 0., 0., 0.]);
     }
 
     #[test]
     fn it_pushes_short_data() {
         let mut data = DataBuffer::new(6);
-        data.push_latest_data(&[2, 3, 4]);
-        assert_eq!(&data.clone_vec(), &[0, 0, 0, 2, 3, 4]);
-        data.push_latest_data(&[5, 6]);
-        assert_eq!(&data.clone_vec(), &[0, 2, 3, 4, 5, 6]);
+        data.push_latest_data(&[2., 3., 4.]);
+        assert_eq!(&data.clone_vec(), &[0., 0., 0., 2., 3., 4.]);
+        data.push_latest_data(&[5., 6.]);
+        assert_eq!(&data.clone_vec(), &[0., 2., 3., 4., 5., 6.]);
     }
 
     #[test]
     fn it_pushes_long_data() {
         let mut data = DataBuffer::new(4);
-        data.push_latest_data(&[2, 3, 4]);
-        assert_eq!(&data.clone_vec(), &[0, 2, 3, 4]);
-        data.push_latest_data(&[11, 12, 13, 14, 15, 16, 17]);
-        assert_eq!(&data.clone_vec(), &[14, 15, 16, 17]);
+        data.push_latest_data(&[2., 3., 4.]);
+        assert_eq!(&data.clone_vec(), &[0., 2., 3., 4.]);
+        data.push_latest_data(&[11., 12., 13., 14., 15., 16., 17.]);
+        assert_eq!(&data.clone_vec(), &[14., 15., 16., 17.]);
     }
 }
