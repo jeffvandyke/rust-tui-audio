@@ -45,11 +45,11 @@ impl Ui {
                                 return;
                             }
                             if tx.send(Event::KeyInput(key_event)).is_err() {
-                                return;
+                                panic!("Problem with tx.send");
                             }
                         }
                         None => {
-                            return;
+                            std::thread::sleep(std::time::Duration::from_millis(100));
                         }
                         _ => {}
                     }
