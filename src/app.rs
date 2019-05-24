@@ -161,7 +161,9 @@ impl App {
                     // Done looping
                     Err(TryRecvError::Empty) => break,
                     // Done RUNNING, exit...
-                    Err(TryRecvError::Disconnected) => return Ok(AppEndReason::KeyQueueDisconnected),
+                    Err(TryRecvError::Disconnected) => {
+                        return Ok(AppEndReason::KeyQueueDisconnected)
+                    }
                 }
             }
 
